@@ -7,5 +7,6 @@ export const configs = {
   RAZORPAY: {
     KEY_ID: process.env.RAZORPAY_KEY_ID,
     KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
+    WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
   },
 };

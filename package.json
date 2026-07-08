@@ -19,6 +19,7 @@
   "author": "https://github.com/sn0914r",
   "license": "ISC",
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.0",
     "@types/pg": "^8.20.0",
@@ -29,6 +30,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
