@@ -9,7 +9,7 @@
     "target": "ESNext",
 
     "lib": ["esnext"],
-    "types": ["node"],
+    "types": ["node", "jest"],
 
     "sourceMap": true,
 
