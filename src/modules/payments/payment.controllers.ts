@@ -5,6 +5,8 @@ import type {
   InitiatePaymentReqBody,
   InitiatePaymentResData,
 } from "./payment.types";
+import { getPaymentRecord } from "./services/getPaymentRecord";
+import { logger } from "@/utils/logger";
 
 export const initiatePaymentController = async (
   req: Request<{}, {}, InitiatePaymentReqBody>,
@@ -34,5 +36,21 @@ export const initiatePaymentController = async (
       gateway,
       method: paymentMethod,
     },
+  });
+};
+
+export const getPaymentRecordController = async (
+  req: Request<{ id: string }>,
+  res: Response,
+) => {
+  const paymentId = req.params.id as string;
+  logger.info(`Payment Id is ${paymentId}`);
+
+  const record = await getPaymentRecord(paymentId);
+
+  res.status(200).json({
+    success: true,
+    message: "Payment details retrieved",
+    data: record,
   });
 };
