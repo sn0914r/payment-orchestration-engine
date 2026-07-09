@@ -23,41 +23,49 @@ export const razorpayWebhookHandler = async (req: Request) => {
     .from(PaymentsTable)
     .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId));
 
-  // FIX: Add current order not found edge case
+  if (!currentOrder) {
+    logger.warn(`No payment found for gatewayOrderId: ${gatewayOrderId}`);
+    return;
+  }
 
   const currentStatus = currentOrder.status as PaymentStatus;
   const paymentId = currentOrder.id;
 
   switch (parsedBody.event) {
     case "payment.authorized":
-      await updatePaymentRecord(
+      await processPaymentUpdate(
         PAYMENT.STATUS.PROCESSING,
         gatewayOrderId,
         gatewayPaymentId,
-      );
-      await savePaymentEvent(
         currentStatus,
-        PAYMENT.STATUS.PROCESSING,
         paymentId,
       );
+
       logger.info("PAYMENT PROCESSING");
       break;
     case "payment.captured":
-      await updatePaymentRecord(
+      // INFO: razorpay can send the same event multiple times so this statement prevent success to success events
+      if (currentStatus === PAYMENT.STATUS.SUCCESS) break;
+
+      await processPaymentUpdate(
         PAYMENT.STATUS.SUCCESS,
         gatewayOrderId,
         gatewayPaymentId,
+        currentStatus,
+        paymentId,
       );
-      await savePaymentEvent(currentStatus, PAYMENT.STATUS.SUCCESS, paymentId);
+
       logger.info("PAYMENT SUCCESS");
       break;
     case "payment.failed":
-      await updatePaymentRecord(
+      await processPaymentUpdate(
         PAYMENT.STATUS.FAILED,
         gatewayOrderId,
         gatewayPaymentId,
+        currentStatus,
+        paymentId,
       );
-      await savePaymentEvent(currentStatus, PAYMENT.STATUS.FAILED, paymentId);
+
       logger.info("PAYMENT FAILED");
       break;
   }
@@ -80,31 +88,24 @@ const validateSignatures = (signature: string, req: Request) => {
   }
 };
 
-const updatePaymentRecord = async (
+const processPaymentUpdate = async (
   status: PaymentStatus,
   gatewayOrderId: string,
   gatewayPaymentId: string,
-) => {
-  const result = await db
-    .update(PaymentsTable)
-    .set({ status, gatewayPaymentId })
-    .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId))
-    .returning({ id: PaymentsTable.id });
-
-  if (result.length === 0) {
-    logger.warn(`No payment found for orderId: ${gatewayOrderId}`);
-  }
-};
-
-const savePaymentEvent = async (
   fromStatus: PaymentStatus,
-  toStatus: PaymentStatus,
-  gatewayPaymentId: string,
+  paymentId: string,
 ) => {
-  await db.insert(PaymentsEventsTable).values({
-    paymentId: gatewayPaymentId,
-    fromStatus,
-    toStatus,
-    trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+  await db.transaction(async (transaction) => {
+    await transaction
+      .update(PaymentsTable)
+      .set({ status, gatewayPaymentId })
+      .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId));
+
+    await transaction.insert(PaymentsEventsTable).values({
+      paymentId,
+      fromStatus,
+      toStatus: status,
+      trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+    });
   });
 };
