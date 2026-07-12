@@ -32,8 +32,8 @@ export const PaymentsTable = pgTable(
     idempotencyKey: text("idempotency_key").notNull().unique(),
     orderId: text("order_id").notNull(),
 
-    gateway: gatewayEnum("gateway").notNull(),
-    gatewayOrderId: text("gateway_order_id").notNull().unique(),
+    gateway: gatewayEnum("gateway"),
+    gatewayOrderId: text("gateway_order_id").unique(),
     gatewayPaymentId: text("gateway_payment_id").unique(),
 
     status: statusEnum("status").notNull().default(PAYMENT.STATUS.INITIATED),

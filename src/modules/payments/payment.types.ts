@@ -1,20 +1,28 @@
-import { PAYMENT } from "@/constants";
-
 export interface InitiatePaymentReqBody {
   amount: number;
   method: string;
   orderId: string;
   currency?: string;
-  idempotencyKey: string;
+  customer: {
+    id: string;
+    phone: string;
+    email: string;
+  };
 }
 
 export interface InitiatePaymentResData {
-  gatewayOrderId: string;
+  orderId: string;
   gateway: string;
-  method?: string;
+  method: string;
+  paymentLink?: string;
+  keyId?: string;
 }
 
-export interface InitiatePaymentReturn extends InitiatePaymentResData {
+export interface InitiatePaymentReturn {
+  orderId: string;
+  gateway: string;
+  paymentLink?: string;
+  keyId?: string;
   paymentMethod: string;
 }
 

@@ -38,7 +38,7 @@ export const globalErrorHandler = (
 
   res.status(500).json({
     success: false,
-    message: "Internal Server Error",
+    message: err.message || "Internal Server Error",
     errorCode: ERRORCODES.INTERNAL_SERVER_ERROR,
     stack: isProd ? undefined : err.stack,
   });

@@ -4,6 +4,8 @@ import { ERRORCODES, PAYMENT } from "@/constants";
 import { PaymentsTable } from "@/db/schema";
 import { AppError } from "@/errors/AppError";
 import type { Request, Response, NextFunction } from "express";
+import { formatPaymentRecord } from "./payment.helpers";
+import type { PaymentRecord } from "./payment.types";
 
 export const idempotencyMiddleware = async (
   req: Request,
@@ -21,23 +23,20 @@ export const idempotencyMiddleware = async (
   }
 
   const [order] = await db
-    .select({
-      idempotencyKey: PaymentsTable.idempotencyKey,
-      status: PaymentsTable.status,
-    })
+    .select()
     .from(PaymentsTable)
     .where(eq(PaymentsTable.idempotencyKey, idempotencyKey as string))
     .limit(1);
 
   if (order && order.status === PAYMENT.STATUS.SUCCESS) {
+    const formattedOrder = formatPaymentRecord(order as PaymentRecord);
     return res.status(200).json({
       success: true,
       message:
         "Request has already been processed. Returning the existing payment",
-      data: order,
+      data: formattedOrder,
     });
   }
 
-  req.body.idempotencyKey = idempotencyKey;
   next();
 };

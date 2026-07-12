@@ -10,32 +10,25 @@ import { logger } from "@/utils/logger";
 
 export const initiatePaymentController = async (
   req: Request<{}, {}, InitiatePaymentReqBody>,
-  res: Response<ApiResponse<InitiatePaymentResData>>,
+  res: Response<ApiResponse<InitiatePaymentResData | {}>>,
 ) => {
-  const {
-    amount,
-    method,
-    orderId,
-    idempotencyKey,
-    currency = "INR",
-  } = req.body;
+  const { amount, method, orderId, currency = "INR", customer } = req.body;
 
-  const { gatewayOrderId, gateway, paymentMethod } = await initiatePayment(
+  const idempotencyKey = req.headers["idempotency-key"] as string;
+
+  const gatewayOrder = await initiatePayment(
     amount,
     method,
     orderId,
     idempotencyKey,
     currency,
+    customer,
   );
 
   res.status(200).json({
     success: true,
     message: "Payment order created",
-    data: {
-      gatewayOrderId,
-      gateway,
-      method: paymentMethod,
-    },
+    data: gatewayOrder,
   });
 };
 

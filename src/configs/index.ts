@@ -9,4 +9,8 @@ export const configs = {
     KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
     WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
   },
+  CASHFREE: {
+    CLIENT_ID: process.env.CASHFREE_CLIENT_ID,
+    CLIENT_SECRET: process.env.CASHFREE_CLIENT_SECRET,
+  },
 };

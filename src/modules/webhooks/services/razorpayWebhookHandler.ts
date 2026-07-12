@@ -88,7 +88,7 @@ const validateSignatures = (signature: string, req: Request) => {
   }
 };
 
-const processPaymentUpdate = async (
+export const processPaymentUpdate = async (
   status: PaymentStatus,
   gatewayOrderId: string,
   gatewayPaymentId: string,
