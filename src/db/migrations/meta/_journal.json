@@ -22,6 +22,13 @@
       "when": 1783693233207,
       "tag": "0002_lean_adam_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784355053895,
+      "tag": "0003_boring_photon",
+      "breakpoints": true
     }
   ]
 }

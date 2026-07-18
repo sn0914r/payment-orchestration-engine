@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
 import { PaymentsTable, statusEnum } from "./payment.schema";
 import { pgEnum } from "drizzle-orm/pg-core";
 import { PAYMENT } from "@/constants";
@@ -18,6 +18,7 @@ export const PaymentsEventsTable = pgTable("payment_events", {
   fromStatus: statusEnum("from_status"),
   toStatus: statusEnum("to_status").notNull(),
   trigger: triggerEnum("trigger").notNull(),
+  payload: jsonb("payload"),
 
   createdAt: timestamp("created_at").defaultNow(),
 });

@@ -19,11 +19,12 @@ export interface InitiatePaymentResData {
 }
 
 export interface InitiatePaymentReturn {
-  orderId: string;
-  gateway: string;
+  paymentId: string | null;
+  orderId?: string | null;
+  gateway?: string | null;
   paymentLink?: string;
   keyId?: string;
-  paymentMethod: string;
+  paymentMethod?: string;
 }
 
 export interface PaymentRecord {

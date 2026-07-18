@@ -22,6 +22,13 @@ export const PAYMENT = {
   TRIGGERS: {
     API_CALL: "api_call",
     WEBHOOK_RECEIVED: "webhook_received",
+    ROUTING_DECISION: "routing_decision",
+    GATEWAY_ERROR: "gateway_error",
+    USER_ERROR: "user_error",
+    FALLBACK: "fallback",
+    WEBHOOK_DUPLICATED: "webhook_duplicated",
+    RETRY_QUEUED: "retry_queued",
+    RETRY_ATTEMPT: "retry_attempt",
   },
 
   ERROR_TYPES: {

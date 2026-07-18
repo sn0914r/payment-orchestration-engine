@@ -8,6 +8,7 @@ import { PaymentStatus } from "../webhook.types";
 import { db } from "@/clients/pgsql";
 import { PaymentsEventsTable, PaymentsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { logPaymentEvent } from "@/modules/payments/services/initiatePayment";
 
 export const razorpayWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-razorpay-signature"] as string;
@@ -28,6 +29,13 @@ export const razorpayWebhookHandler = async (req: Request) => {
     return;
   }
 
+  const normalizedJsonEventObject = {
+    eventId: parsedBody.payload.payment.entity.id,
+    eventType: parsedBody.event,
+    gatewayOrderId,
+    gatewayPaymentId,
+  };
+
   const currentStatus = currentOrder.status as PaymentStatus;
   const paymentId = currentOrder.id;
 
@@ -40,6 +48,14 @@ export const razorpayWebhookHandler = async (req: Request) => {
         currentStatus,
         paymentId,
       );
+
+      await logPaymentEvent({
+        paymentId,
+        fromStatus: currentStatus,
+        toStatus: PAYMENT.STATUS.PROCESSING,
+        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+        payload: normalizedJsonEventObject,
+      });
 
       logger.info("PAYMENT PROCESSING");
       break;
@@ -55,9 +71,18 @@ export const razorpayWebhookHandler = async (req: Request) => {
         paymentId,
       );
 
+      await logPaymentEvent({
+        paymentId,
+        fromStatus: currentStatus,
+        toStatus: PAYMENT.STATUS.SUCCESS,
+        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+        payload: normalizedJsonEventObject,
+      });
+
       logger.info("PAYMENT SUCCESS");
       break;
     case "payment.failed":
+      
       await processPaymentUpdate(
         PAYMENT.STATUS.FAILED,
         gatewayOrderId,
@@ -65,6 +90,14 @@ export const razorpayWebhookHandler = async (req: Request) => {
         currentStatus,
         paymentId,
       );
+      
+      await logPaymentEvent({
+        paymentId,
+        fromStatus: currentStatus,
+        toStatus: PAYMENT.STATUS.FAILED,
+        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+        payload: normalizedJsonEventObject,
+      });
 
       logger.info("PAYMENT FAILED");
       break;
@@ -101,11 +134,11 @@ export const processPaymentUpdate = async (
       .set({ status, gatewayPaymentId })
       .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId));
 
-    await transaction.insert(PaymentsEventsTable).values({
-      paymentId,
-      fromStatus,
-      toStatus: status,
-      trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-    });
+    // await transaction.insert(PaymentsEventsTable).values({
+    //   paymentId,
+    //   fromStatus,
+    //   toStatus: status,
+    //   trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+    // });
   });
 };

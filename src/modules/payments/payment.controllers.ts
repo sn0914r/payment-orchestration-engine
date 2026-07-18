@@ -7,6 +7,7 @@ import type {
 } from "./payment.types";
 import { getPaymentRecord } from "./services/getPaymentRecord";
 import { logger } from "@/utils/logger";
+import { PAYMENT } from "@/constants";
 
 export const initiatePaymentController = async (
   req: Request<{}, {}, InitiatePaymentReqBody>,
@@ -16,7 +17,7 @@ export const initiatePaymentController = async (
 
   const idempotencyKey = req.headers["idempotency-key"] as string;
 
-  const gatewayOrder = await initiatePayment(
+  const result = await initiatePayment(
     amount,
     method,
     orderId,
@@ -24,12 +25,39 @@ export const initiatePaymentController = async (
     currency,
     customer,
   );
+  if (result.gateway === PAYMENT.GATEWAYS.CASHFREE) {
+    return res.json({
+      success: true,
+      message: "Payment order created",
+      data: {
+        paymentId: result.paymentId,
+        orderId: result.orderId,
+        gateway: result.gateway,
+        paymentLink: result.paymentLink,
+        paymentMethod: result.paymentMethod,
+      },
+    });
+  }
 
-  res.status(200).json({
-    success: true,
-    message: "Payment order created",
-    data: gatewayOrder,
-  });
+  if (result.gateway === PAYMENT.GATEWAYS.RAZORPAY) {
+    return res.json({
+      success: true,
+      message: "Payment order created",
+      data: {
+        paymentId: result.paymentId,
+        orderId: result.orderId,
+        gateway: result.gateway,
+        keyId: result.keyId,
+        paymentMethod: result.paymentMethod,
+      },
+    });
+  }
+
+  // res.status(200).json({
+  //   success: true,
+  //   message: "Payment order created",
+  //   data: gatewayOrder,
+  // });
 };
 
 export const getPaymentRecordController = async (

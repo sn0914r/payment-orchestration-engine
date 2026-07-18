@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import type { Request } from "express";
 import type { PaymentStatus } from "../webhook.types";
 import { processPaymentUpdate } from "./razorpayWebhookHandler";
+import { logPaymentEvent } from "@/modules/payments/services/initiatePayment";
 
 export const cashfreeWebhookHandler = async (req: Request) => {
   logger.info("CASHFREE WEBHOOK START");
@@ -37,6 +38,13 @@ export const cashfreeWebhookHandler = async (req: Request) => {
     return;
   }
 
+  const normalizedJsonEventObject = {
+    eventId: parsedBody.data.payment.cf_payment_id,
+    eventType: parsedBody.type,
+    gatewayOrderId,
+    gatewayPaymentId,
+  };
+
   const currentStatus = currentOrder.status as PaymentStatus;
   const paymentId = currentOrder.id;
 
@@ -55,6 +63,13 @@ export const cashfreeWebhookHandler = async (req: Request) => {
         paymentId,
       );
 
+      await logPaymentEvent({
+        paymentId,
+        fromStatus: currentStatus,
+        toStatus: PAYMENT.STATUS.SUCCESS,
+        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+        payload: normalizedJsonEventObject,
+      });
       logger.info("PAYMENT SUCCESS - CASHFREE");
       break;
 
@@ -66,6 +81,14 @@ export const cashfreeWebhookHandler = async (req: Request) => {
         currentStatus,
         paymentId,
       );
+
+      await logPaymentEvent({
+        paymentId,
+        fromStatus: currentStatus,
+        toStatus: PAYMENT.STATUS.FAILED,
+        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
+        payload: normalizedJsonEventObject,
+      });
       logger.info("PAYMENT FAILED - CASHFREE");
       break;
   }
