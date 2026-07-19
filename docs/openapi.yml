@@ -1,0 +1,255 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Payment Orchestration Engine API
+  description: API documentation for the Payment Orchestration Engine
+servers:
+  - url: /
+paths:
+  /payments/initiate:
+    post:
+      tags:
+        - Payments
+      summary: Initiate a payment
+      parameters:
+        - name: idempotency-key
+          in: header
+          required: true
+          description: "A unique, client-generated identifier (like a UUID) to prevent duplicate payments."
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - method
+                - orderId
+                - customer
+              properties:
+                amount:
+                  type: number
+                  example: 100
+                method:
+                  type: string
+                  enum:
+                    - card
+                    - netbanking
+                    - wallet
+                    - emi
+                    - upi
+                  example: upi
+                orderId:
+                  type: string
+                  example: order_12345
+                customer:
+                  type: object
+                  required:
+                    - id
+                    - phone
+                  properties:
+                    id:
+                      type: string
+                      example: cust_123
+                    phone:
+                      type: string
+                      example: "9876543210"
+                    email:
+                      type: string
+                      format: email
+                      example: user@example.com
+      responses:
+        "200":
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required:
+                      - paymentId
+                      - orderId
+                      - gateway
+                      - paymentMethod
+                    properties:
+                      paymentId:
+                        type: string
+                      orderId:
+                        type: string
+                      gateway:
+                        type: string
+                      paymentLink:
+                        type: string
+                      keyId:
+                        type: string
+                      paymentMethod:
+                        type: string
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /payments/{id}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174000
+      responses:
+        "200":
+          description: Payment details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    nullable: true
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /webhooks/razorpay:
+    post:
+      tags:
+        - Webhooks
+      summary: Razorpay Webhook
+      description: Endpoint for receiving Razorpay payment webhooks.
+      parameters:
+        - name: x-razorpay-signature
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: x-razorpay-event-id
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+  /webhooks/cashfree:
+    post:
+      tags:
+        - Webhooks
+      summary: Cashfree Webhook
+      description: Endpoint for receiving Cashfree payment webhooks.
+      parameters:
+        - name: x-webhook-signature
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: x-webhook-timestamp
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+  /health:
+    get:
+      tags:
+        - System
+      summary: Health Check
+      description: Endpoint to check if the server is running.
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+components:
+  schemas:
+    ValidationError:
+      type: object
+      required:
+        - success
+        - message
+        - errorCode
+        - errors
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed
+        errorCode:
+          type: string
+          example: VALIDATION_ERROR
+        errors:
+          type: array
+          items:
+            type: object
+            required:
+              - field
+              - message
+            properties:
+              field:
+                type: string
+                example: customer.phone
+              message:
+                type: string
+                example: "Invalid input: expected string, received number"
