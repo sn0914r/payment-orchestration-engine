@@ -1,30 +1,29 @@
-import type { Request, Response } from "express";
 import { initiatePayment } from "./services/initiatePayment";
-import type { ApiResponse } from "@/types";
+import type { ApiResponse, PaymentMethod } from "@/types";
 import type {
-  InitiatePaymentReqBody,
-  InitiatePaymentResData,
+  InitiatePaymentRequestBodyShape,
+  InitiatePaymentResponseShape,
 } from "./payment.types";
 import { getPaymentRecord } from "./services/getPaymentRecord";
-import { logger } from "@/utils/logger";
 import { PAYMENT } from "@/constants";
+import type { Request, Response } from "express";
 
 export const initiatePaymentController = async (
-  req: Request<{}, {}, InitiatePaymentReqBody>,
-  res: Response<ApiResponse<InitiatePaymentResData | {}>>,
+  req: Request<{}, {}, InitiatePaymentRequestBodyShape>,
+  res: Response<ApiResponse<InitiatePaymentResponseShape | {}>>,
 ) => {
-  const { amount, method, orderId, currency = "INR", customer } = req.body;
+  const { amount, method, orderId, customer } = req.body;
 
   const idempotencyKey = req.headers["idempotency-key"] as string;
 
-  const result = await initiatePayment(
-    amount,
-    method,
+  const result = await initiatePayment({
+    amountInRupees: amount,
+    method: method as PaymentMethod,
     orderId,
     idempotencyKey,
-    currency,
     customer,
-  );
+  });
+
   if (result.gateway === PAYMENT.GATEWAYS.CASHFREE) {
     return res.json({
       success: true,
@@ -52,12 +51,6 @@ export const initiatePaymentController = async (
       },
     });
   }
-
-  // res.status(200).json({
-  //   success: true,
-  //   message: "Payment order created",
-  //   data: gatewayOrder,
-  // });
 };
 
 export const getPaymentRecordController = async (
@@ -65,10 +58,8 @@ export const getPaymentRecordController = async (
   res: Response,
 ) => {
   const paymentId = req.params.id as string;
-  logger.info(`Payment Id is ${paymentId}`);
 
   const record = await getPaymentRecord(paymentId);
-
   res.status(200).json({
     success: true,
     message: "Payment details retrieved",

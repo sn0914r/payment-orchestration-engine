@@ -1,52 +1,52 @@
-import { configs } from "@/configs";
-import { ERRORCODES, PAYMENT } from "@/constants";
-import { AppError } from "@/errors/AppError";
+import { PAYMENT } from "@/constants";
 import { logger } from "@/utils/logger";
-import crypto from "crypto";
 import type { Request } from "express";
-import { PaymentStatus } from "../webhook.types";
-import { db } from "@/clients/pgsql";
-import { PaymentsEventsTable, PaymentsTable } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { logPaymentEvent } from "@/modules/payments/services/initiatePayment";
 import {
   deduplicateWebhook,
   markWebhookProcessed,
 } from "../webhook.deduplication";
+import { razorpayGateway } from "@/modules/gateways/connectors/razorpay.connector";
+import { assertValidWebhookSignature } from "../webhook.helpers";
+import {
+  findOrderByGatewayOrderId,
+  updatePaymentStatusByGatewayOrderId,
+} from "../webhook.repository";
+import { logPaymentEvent } from "@/modules/payments/payment.repository";
+import { PaymentStatus } from "@/types";
 
 export const razorpayWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-razorpay-signature"] as string;
 
-  validateSignatures(signature, req);
+  const isSignatureValid = razorpayGateway.verifyWebhook(req.body, signature);
+  assertValidWebhookSignature(isSignatureValid);
 
-  const parsedBody = JSON.parse(req.body.toString());
-  const gatewayOrderId = parsedBody.payload.payment.entity.order_id;
-  const gatewayPaymentId = parsedBody.payload.payment.entity.id;
-  const eventType = parsedBody.event;
+  const webhookPayload = JSON.parse(req.body.toString());
+  const gatewayOrderId = webhookPayload.payload.payment.entity.order_id;
+  const gatewayPaymentId = webhookPayload.payload.payment.entity.id;
+  const eventType = webhookPayload.event;
+
   // INFO: Razorpay sends event ID in headers. If missing, create a surrogate ID like we did for Cashfree
-  const eventId = (req.headers["x-razorpay-event-id"] as string) || `${parsedBody.created_at}_${gatewayPaymentId}_${eventType}`;
+  const eventId =
+    (req.headers["x-razorpay-event-id"] as string) ||
+    `${webhookPayload.created_at}_${gatewayPaymentId}_${eventType}`;
 
   const isDuplicate = await deduplicateWebhook(
     PAYMENT.GATEWAYS.RAZORPAY,
     eventId,
     eventType,
-    parsedBody,
+    webhookPayload,
   );
   if (isDuplicate) return;
 
-  const [currentOrder] = await db
-    .select()
-    .from(PaymentsTable)
-    .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId));
-
+  const currentOrder = await findOrderByGatewayOrderId(gatewayOrderId);
   if (!currentOrder) {
     logger.warn(`No payment found for gatewayOrderId: ${gatewayOrderId}`);
     return;
   }
 
-  const normalizedJsonEventObject = {
-    eventId: parsedBody.payload.payment.entity.id,
-    eventType: parsedBody.event,
+  const normalizedEventObject = {
+    eventId: webhookPayload.payload.payment.entity.id,
+    eventType: webhookPayload.event,
     gatewayOrderId,
     gatewayPaymentId,
   };
@@ -54,14 +54,12 @@ export const razorpayWebhookHandler = async (req: Request) => {
   const currentStatus = currentOrder.status as PaymentStatus;
   const paymentId = currentOrder.id;
 
-  switch (parsedBody.event) {
+  switch (webhookPayload.event) {
     case "payment.authorized":
-      await processPaymentUpdate(
-        PAYMENT.STATUS.PROCESSING,
+      await updatePaymentStatusByGatewayOrderId(
         gatewayOrderId,
         gatewayPaymentId,
-        currentStatus,
-        paymentId,
+        PAYMENT.STATUS.PROCESSING,
       );
 
       await logPaymentEvent({
@@ -69,7 +67,7 @@ export const razorpayWebhookHandler = async (req: Request) => {
         fromStatus: currentStatus,
         toStatus: PAYMENT.STATUS.PROCESSING,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedJsonEventObject,
+        payload: normalizedEventObject,
       });
 
       logger.info("PAYMENT PROCESSING");
@@ -78,12 +76,10 @@ export const razorpayWebhookHandler = async (req: Request) => {
       // INFO: razorpay can send the same event multiple times so this statement prevent success to success events
       if (currentStatus === PAYMENT.STATUS.SUCCESS) break;
 
-      await processPaymentUpdate(
-        PAYMENT.STATUS.SUCCESS,
+      await updatePaymentStatusByGatewayOrderId(
         gatewayOrderId,
         gatewayPaymentId,
-        currentStatus,
-        paymentId,
+        PAYMENT.STATUS.SUCCESS,
       );
 
       await logPaymentEvent({
@@ -91,18 +87,16 @@ export const razorpayWebhookHandler = async (req: Request) => {
         fromStatus: currentStatus,
         toStatus: PAYMENT.STATUS.SUCCESS,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedJsonEventObject,
+        payload: normalizedEventObject,
       });
 
       logger.info("PAYMENT SUCCESS");
       break;
     case "payment.failed":
-      await processPaymentUpdate(
-        PAYMENT.STATUS.FAILED,
+      await updatePaymentStatusByGatewayOrderId(
         gatewayOrderId,
         gatewayPaymentId,
-        currentStatus,
-        paymentId,
+        PAYMENT.STATUS.SUCCESS,
       );
 
       await logPaymentEvent({
@@ -110,7 +104,7 @@ export const razorpayWebhookHandler = async (req: Request) => {
         fromStatus: currentStatus,
         toStatus: PAYMENT.STATUS.FAILED,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedJsonEventObject,
+        payload: normalizedEventObject,
       });
 
       logger.info("PAYMENT FAILED");
@@ -119,42 +113,4 @@ export const razorpayWebhookHandler = async (req: Request) => {
 
   await markWebhookProcessed(eventId);
   return;
-};
-
-const validateSignatures = (signature: string, req: Request) => {
-  const secret = configs.RAZORPAY.WEBHOOK_SECRET as string;
-  const generatedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(req.body)
-    .digest("hex");
-
-  if (generatedSignature !== signature) {
-    throw new AppError(
-      "Invalid webhook signature",
-      400,
-      ERRORCODES.INVALID_WEBHOOK_SIGNATURE,
-    );
-  }
-};
-
-export const processPaymentUpdate = async (
-  status: PaymentStatus,
-  gatewayOrderId: string,
-  gatewayPaymentId: string,
-  fromStatus: PaymentStatus,
-  paymentId: string,
-) => {
-  await db.transaction(async (transaction) => {
-    await transaction
-      .update(PaymentsTable)
-      .set({ status, gatewayPaymentId })
-      .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId));
-
-    // await transaction.insert(PaymentsEventsTable).values({
-    //   paymentId,
-    //   fromStatus,
-    //   toStatus: status,
-    //   trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-    // });
-  });
 };

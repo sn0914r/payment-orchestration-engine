@@ -1,15 +1,11 @@
-import { createCashfreeOrder } from "@/providers/cashfree";
-import type { Gateway } from "../gateway.types";
 import { cashfree } from "@/clients/cashfree";
-import { PAYMENT } from "@/constants";
+import { createCashfreeOrder } from "../providers/cashfree.provider";
 import crypto from "crypto";
+import { PAYMENT } from "@/constants";
+import type { Gateway } from "../gateway.types";
 
 export const cashfreeGateway: Gateway = {
-  initiatePayment: async ({
-    amount,
-    orderId, // NOTE: TO BE REMOVED
-    customer: { id, phone, email },
-  }) => {
+  initiatePayment: async ({ amount, customer: { id, phone, email } }) => {
     const { gatewayOrderId, paymentSession } = await createCashfreeOrder({
       order_id: crypto.randomUUID(),
       order_amount: amount,

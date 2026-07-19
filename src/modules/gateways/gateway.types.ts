@@ -1,3 +1,8 @@
+import { PAYMENT } from "@/constants/payment";
+
+export type PaymentGateway =
+  (typeof PAYMENT.GATEWAYS)[keyof typeof PAYMENT.GATEWAYS];
+
 export interface InitiatePaymentData {
   amount: number;
   method: string;

@@ -1,9 +1,9 @@
-import { createRazorpayOrder } from "@/providers/razorpay";
-import type { Gateway } from "../gateway.types";
-import { razorpay } from "@/clients/razorpay";
 import { configs } from "@/configs";
+import { razorpay } from "@/clients/razorpay";
+import { createRazorpayOrder } from "../providers/razorpay.provider";
 import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils";
 import { PAYMENT } from "@/constants";
+import type { Gateway } from "../gateway.types";
 
 export const razorpayGateway: Gateway = {
   initiatePayment: async ({ amount, orderId, currency = "INR" }) => {

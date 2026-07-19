@@ -1,12 +1,6 @@
 import { pgTable, timestamp, uuid, jsonb } from "drizzle-orm/pg-core";
-import { PaymentsTable, statusEnum } from "./payment.schema";
-import { pgEnum } from "drizzle-orm/pg-core";
-import { PAYMENT } from "@/constants";
-
-export const triggerEnum = pgEnum(
-  "payment_event_trigger",
-  Object.values(PAYMENT.TRIGGERS) as [string, ...string[]],
-);
+import { PaymentsTable } from "./payment.schema";
+import { paymentEventTriggerEnum, paymentStatusEnum } from "./enum";
 
 export const PaymentsEventsTable = pgTable("payment_events", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -15,9 +9,9 @@ export const PaymentsEventsTable = pgTable("payment_events", {
     .notNull()
     .references(() => PaymentsTable.id),
 
-  fromStatus: statusEnum("from_status"),
-  toStatus: statusEnum("to_status").notNull(),
-  trigger: triggerEnum("trigger").notNull(),
+  fromStatus: paymentStatusEnum("from_status"),
+  toStatus: paymentStatusEnum("to_status").notNull(),
+  trigger: paymentEventTriggerEnum("trigger").notNull(),
   payload: jsonb("payload"),
 
   createdAt: timestamp("created_at").defaultNow(),

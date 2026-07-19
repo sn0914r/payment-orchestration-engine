@@ -1,8 +1,52 @@
-export interface InitiatePaymentReqBody {
+import { PaymentGateway } from "../gateways/gateway.types";
+import {
+  PaymentMethod,
+  PaymentStatus,
+  PaymentTriggeredBy,
+  GatewayAttemptStatus,
+} from "@/types";
+
+export interface InitiatePaymentType {
+  amountInRupees: number;
+  method: PaymentMethod;
+  orderId: string;
+  idempotencyKey: string;
+  customer: {
+    id: string;
+    phone: string;
+    email?: string;
+  };
+}
+
+export interface PaymentEventType {
+  paymentId: string;
+  fromStatus: PaymentStatus | null;
+  toStatus: PaymentStatus;
+  trigger: PaymentTriggeredBy;
+  payload: Record<string, any>;
+}
+
+export interface GatewayAttemptType {
+  paymentId: string;
+  gateway: PaymentGateway;
+  status: GatewayAttemptStatus;
+  errorType?: string;
+  errorCode?: string;
+}
+
+export interface InitiatePaymentReturnType {
+  paymentId: string;
+  orderId?: string | null;
+  gateway: PaymentGateway | null;
+  paymentLink?: string;
+  keyId?: string;
+  paymentMethod: PaymentMethod;
+}
+
+export interface InitiatePaymentRequestBodyShape {
   amount: number;
   method: string;
   orderId: string;
-  currency?: string;
   customer: {
     id: string;
     phone: string;
@@ -10,34 +54,10 @@ export interface InitiatePaymentReqBody {
   };
 }
 
-export interface InitiatePaymentResData {
+export interface InitiatePaymentResponseShape {
   orderId: string;
   gateway: string;
   method: string;
   paymentLink?: string;
   keyId?: string;
-}
-
-export interface InitiatePaymentReturn {
-  paymentId: string | null;
-  orderId?: string | null;
-  gateway?: string | null;
-  paymentLink?: string;
-  keyId?: string;
-  paymentMethod?: string;
-}
-
-export interface PaymentRecord {
-  id: string;
-  idempotencyKey: string;
-  orderId: string;
-  gateway: string;
-  gatewayOrderId: string;
-  gatewayPaymentId: string | null;
-  status: string;
-  method: string;
-  amount: number;
-  currency: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
 }

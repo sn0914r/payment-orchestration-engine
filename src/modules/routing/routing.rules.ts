@@ -1,10 +1,11 @@
 import { PAYMENT } from "@/constants";
+import { PaymentGateway } from "../gateways/gateway.types";
 const { RAZORPAY, CASHFREE } = PAYMENT.GATEWAYS;
 
 export const getGatewayByRules = (
   method: string,
   amountInRupees: number,
-): string => {
+): PaymentGateway => {
   const amountInPaise = amountInRupees * 100;
 
   if (amountInPaise >= 10000000) return RAZORPAY;

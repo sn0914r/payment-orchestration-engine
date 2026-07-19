@@ -1,15 +1,15 @@
 import { AppError } from "@/errors/AppError";
 import { ERRORCODES } from "@/constants/errorCodes";
-import { cashfreeGateway } from "./connectors/cashfree";
-import { razorpayGateway } from "./connectors/razorpay";
-import type { Gateway } from "./gateway.types";
+import { cashfreeGateway } from "./connectors/cashfree.connector";
+import { razorpayGateway } from "./connectors/razorpay.connector";
+import type { Gateway, PaymentGateway } from "./gateway.types";
 
 const gateways: Record<string, Gateway> = {
   razorpay: razorpayGateway,
   cashfree: cashfreeGateway,
 };
 
-export const getGateway = (name: string): Gateway => {
+export const getGateway = (name: PaymentGateway): Gateway => {
   const gateway = gateways[name];
 
   if (!gateway) {

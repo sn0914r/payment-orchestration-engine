@@ -1,37 +1,35 @@
-import { db } from "@/clients/pgsql";
-import { ERRORCODES, PAYMENT } from "@/constants";
-import { PaymentsTable } from "@/db/schema";
-import { AppError } from "@/errors/AppError";
-import { cashfreeGateway } from "@/modules/gateways/connectors/cashfree";
-import { logger } from "@/utils/logger";
-import { eq } from "drizzle-orm";
-import type { Request } from "express";
-import type { PaymentStatus } from "../webhook.types";
-import { processPaymentUpdate } from "./razorpayWebhookHandler";
-import { logPaymentEvent } from "@/modules/payments/services/initiatePayment";
+import { PAYMENT } from "@/constants";
+import { cashfreeGateway } from "@/modules/gateways/connectors/cashfree.connector";
 import {
   deduplicateWebhook,
   markWebhookProcessed,
 } from "../webhook.deduplication";
+import { logPaymentEvent } from "@/modules/payments/payment.repository";
+import { assertValidWebhookSignature } from "../webhook.helpers";
+import {
+  findOrderByGatewayOrderId,
+  updatePaymentStatusByGatewayOrderId,
+} from "../webhook.repository";
+import type { Request } from "express";
+import { logger } from "@/utils/logger";
+import { PaymentStatus } from "@/types";
 
 export const cashfreeWebhookHandler = async (req: Request) => {
-  logger.info("CASHFREE WEBHOOK START");
   const signature = req.headers["x-webhook-signature"] as string;
   const timestamp = req.headers["x-webhook-timestamp"] as string;
 
-  const isValid = cashfreeGateway.verifyWebhook(req.body, signature, timestamp);
-  if (!isValid) {
-    throw new AppError(
-      "Invalid webhook signature",
-      400,
-      ERRORCODES.INVALID_WEBHOOK_SIGNATURE,
-    );
-  }
+  const isSignatureValid = cashfreeGateway.verifyWebhook(
+    req.body,
+    signature,
+    timestamp,
+  );
+  assertValidWebhookSignature(isSignatureValid);
 
-  const parsedBody = JSON.parse(req.body.toString());
-  const gatewayOrderId = parsedBody.data.order.order_id;
-  const gatewayPaymentId = parsedBody.data.payment.cf_payment_id;
-  const eventType = parsedBody.type;
+  const webhookPayload = JSON.parse(req.body.toString());
+  const gatewayOrderId = webhookPayload.data.order.order_id;
+  const gatewayPaymentId = webhookPayload.data.payment.cf_payment_id;
+  const eventType = webhookPayload.type;
+
   // INFO: Cashfree does not provide a native event_id in their webhook payloads so provided own key
   const eventId = `${timestamp}_${gatewayPaymentId}_${eventType}`;
 
@@ -39,23 +37,19 @@ export const cashfreeWebhookHandler = async (req: Request) => {
     PAYMENT.GATEWAYS.CASHFREE,
     eventId,
     eventType,
-    parsedBody,
+    webhookPayload,
   );
   if (isDuplicate) return;
 
-  const [currentOrder] = await db
-    .select()
-    .from(PaymentsTable)
-    .where(eq(PaymentsTable.gatewayOrderId, gatewayOrderId));
-
+  const currentOrder = await findOrderByGatewayOrderId(gatewayOrderId);
   if (!currentOrder) {
     logger.warn(`No payment found for gatewayOrderId: ${gatewayOrderId}`);
     return;
   }
 
-  const normalizedJsonEventObject = {
-    eventId: parsedBody.data.payment.cf_payment_id,
-    eventType: parsedBody.type,
+  const normalizedEventObject = {
+    eventId,
+    eventType,
     gatewayOrderId,
     gatewayPaymentId,
   };
@@ -63,19 +57,17 @@ export const cashfreeWebhookHandler = async (req: Request) => {
   const currentStatus = currentOrder.status as PaymentStatus;
   const paymentId = currentOrder.id;
 
-  switch (parsedBody.type) {
+  switch (webhookPayload.type) {
     case "PAYMENT_SUCCESS_WEBHOOK":
       logger.info(
         `PAYMENT_SUCCESS_EVENT HIT FROM CASHFREE WEBHOOK, PAYMENT ID IS: ${paymentId}`,
       );
       if (currentStatus === PAYMENT.STATUS.SUCCESS) break;
 
-      await processPaymentUpdate(
-        PAYMENT.STATUS.SUCCESS,
+      await updatePaymentStatusByGatewayOrderId(
         gatewayOrderId,
         gatewayPaymentId,
-        currentStatus,
-        paymentId,
+        PAYMENT.STATUS.SUCCESS,
       );
 
       await logPaymentEvent({
@@ -83,18 +75,16 @@ export const cashfreeWebhookHandler = async (req: Request) => {
         fromStatus: currentStatus,
         toStatus: PAYMENT.STATUS.SUCCESS,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedJsonEventObject,
+        payload: normalizedEventObject,
       });
       logger.info("PAYMENT SUCCESS - CASHFREE");
       break;
 
     case "PAYMENT_FAILED_WEBHOOK":
-      await processPaymentUpdate(
-        PAYMENT.STATUS.FAILED,
+      await updatePaymentStatusByGatewayOrderId(
         gatewayOrderId,
         gatewayPaymentId,
-        currentStatus,
-        paymentId,
+        PAYMENT.STATUS.FAILED,
       );
 
       await logPaymentEvent({
@@ -102,13 +92,12 @@ export const cashfreeWebhookHandler = async (req: Request) => {
         fromStatus: currentStatus,
         toStatus: PAYMENT.STATUS.FAILED,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedJsonEventObject,
+        payload: normalizedEventObject,
       });
       logger.info("PAYMENT FAILED - CASHFREE");
       break;
   }
 
-  logger.info("CASHFREE WEBHOOK END");
   await markWebhookProcessed(eventId);
   return;
 };

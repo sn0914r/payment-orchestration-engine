@@ -4,25 +4,12 @@ import {
   uuid,
   varchar,
   text,
-  pgEnum,
   integer,
   timestamp,
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-
-export const gatewayEnum = pgEnum(
-  "gateway",
-  Object.values(PAYMENT.GATEWAYS) as [string, ...string[]],
-);
-export const statusEnum = pgEnum(
-  "status",
-  Object.values(PAYMENT.STATUS) as [string, ...string[]],
-);
-export const methodEnum = pgEnum(
-  "method",
-  Object.values(PAYMENT.METHOD) as [string, ...string[]],
-);
+import { gatewaysEnum, paymentMethodEnum, paymentStatusEnum } from "./enum";
 
 export const PaymentsTable = pgTable(
   "payments",
@@ -32,12 +19,14 @@ export const PaymentsTable = pgTable(
     idempotencyKey: text("idempotency_key").notNull().unique(),
     orderId: text("order_id").notNull(),
 
-    gateway: gatewayEnum("gateway"),
+    gateway: gatewaysEnum("gateway"),
     gatewayOrderId: text("gateway_order_id").unique(),
     gatewayPaymentId: text("gateway_payment_id").unique(),
 
-    status: statusEnum("status").notNull().default(PAYMENT.STATUS.INITIATED),
-    method: methodEnum("method").notNull(),
+    status: paymentStatusEnum("status")
+      .notNull()
+      .default(PAYMENT.STATUS.INITIATED),
+    method: paymentMethodEnum("method").notNull(),
 
     amount: integer("amount_in_paise").notNull(),
     currency: varchar("currency", { length: 3 }).default("INR"),

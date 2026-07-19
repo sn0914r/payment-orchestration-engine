@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { razorpayWebhookController } from "./webhook.controllers";
+import {
+  cashfreeWebhookController,
+  razorpayWebhookController,
+} from "./webhook.controllers";
 import express from "express";
-import { cashfreeWebhookHandler } from "./services/cashfreeWebhookHandler";
 
 export const webhookRouter = Router();
 
@@ -14,5 +16,5 @@ webhookRouter.post(
 webhookRouter.post(
   "/cashfree",
   express.raw({ type: "application/json" }),
-  cashfreeWebhookHandler,
+  cashfreeWebhookController,
 );
