@@ -9,6 +9,10 @@ import { db } from "@/clients/pgsql";
 import { PaymentsEventsTable, PaymentsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { logPaymentEvent } from "@/modules/payments/services/initiatePayment";
+import {
+  deduplicateWebhook,
+  markWebhookProcessed,
+} from "../webhook.deduplication";
 
 export const razorpayWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-razorpay-signature"] as string;
@@ -18,6 +22,17 @@ export const razorpayWebhookHandler = async (req: Request) => {
   const parsedBody = JSON.parse(req.body.toString());
   const gatewayOrderId = parsedBody.payload.payment.entity.order_id;
   const gatewayPaymentId = parsedBody.payload.payment.entity.id;
+  const eventType = parsedBody.event;
+  // INFO: Razorpay sends event ID in headers. If missing, create a surrogate ID like we did for Cashfree
+  const eventId = (req.headers["x-razorpay-event-id"] as string) || `${parsedBody.created_at}_${gatewayPaymentId}_${eventType}`;
+
+  const isDuplicate = await deduplicateWebhook(
+    PAYMENT.GATEWAYS.RAZORPAY,
+    eventId,
+    eventType,
+    parsedBody,
+  );
+  if (isDuplicate) return;
 
   const [currentOrder] = await db
     .select()
@@ -82,7 +97,6 @@ export const razorpayWebhookHandler = async (req: Request) => {
       logger.info("PAYMENT SUCCESS");
       break;
     case "payment.failed":
-      
       await processPaymentUpdate(
         PAYMENT.STATUS.FAILED,
         gatewayOrderId,
@@ -90,7 +104,7 @@ export const razorpayWebhookHandler = async (req: Request) => {
         currentStatus,
         paymentId,
       );
-      
+
       await logPaymentEvent({
         paymentId,
         fromStatus: currentStatus,
@@ -102,6 +116,8 @@ export const razorpayWebhookHandler = async (req: Request) => {
       logger.info("PAYMENT FAILED");
       break;
   }
+
+  await markWebhookProcessed(eventId);
   return;
 };
 

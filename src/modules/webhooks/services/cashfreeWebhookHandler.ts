@@ -9,6 +9,10 @@ import type { Request } from "express";
 import type { PaymentStatus } from "../webhook.types";
 import { processPaymentUpdate } from "./razorpayWebhookHandler";
 import { logPaymentEvent } from "@/modules/payments/services/initiatePayment";
+import {
+  deduplicateWebhook,
+  markWebhookProcessed,
+} from "../webhook.deduplication";
 
 export const cashfreeWebhookHandler = async (req: Request) => {
   logger.info("CASHFREE WEBHOOK START");
@@ -27,6 +31,17 @@ export const cashfreeWebhookHandler = async (req: Request) => {
   const parsedBody = JSON.parse(req.body.toString());
   const gatewayOrderId = parsedBody.data.order.order_id;
   const gatewayPaymentId = parsedBody.data.payment.cf_payment_id;
+  const eventType = parsedBody.type;
+  // INFO: Cashfree does not provide a native event_id in their webhook payloads so provided own key
+  const eventId = `${timestamp}_${gatewayPaymentId}_${eventType}`;
+
+  const isDuplicate = await deduplicateWebhook(
+    PAYMENT.GATEWAYS.CASHFREE,
+    eventId,
+    eventType,
+    parsedBody,
+  );
+  if (isDuplicate) return;
 
   const [currentOrder] = await db
     .select()
@@ -94,5 +109,6 @@ export const cashfreeWebhookHandler = async (req: Request) => {
   }
 
   logger.info("CASHFREE WEBHOOK END");
+  await markWebhookProcessed(eventId);
   return;
 };

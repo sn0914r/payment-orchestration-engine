@@ -29,6 +29,27 @@
       "when": 1784355053895,
       "tag": "0003_boring_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784428144967,
+      "tag": "0004_abnormal_sinister_six",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784428467145,
+      "tag": "0005_far_scrambler",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784428821762,
+      "tag": "0006_sad_wolverine",
+      "breakpoints": true
     }
   ]
 }

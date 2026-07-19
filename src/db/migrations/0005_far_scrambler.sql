@@ -1,0 +1,1 @@
+ALTER TABLE "webhook_events" ADD CONSTRAINT "webhook_events_event_type_unique" UNIQUE("event_type");
