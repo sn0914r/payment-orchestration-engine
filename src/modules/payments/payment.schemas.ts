@@ -12,4 +12,4 @@ export const InitiatePaymentSchema = zod.object({
   }),
 });
 
-export const PaymentIdSchema = zod.uuid();
+export const PaymentIdSchema = { id: zod.uuid() };

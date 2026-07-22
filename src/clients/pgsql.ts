@@ -3,11 +3,9 @@ import { configs } from "../configs";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { logger } from "../utils/logger";
 
-const isLocal = configs.DATABASE_URL?.includes("localhost");
-
 const pool = new Pool({
   connectionString: configs.DATABASE_URL,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  ssl: configs.NODE_ENV === "production" ? true : false,
 });
 
 export const db = drizzle(pool);

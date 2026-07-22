@@ -96,7 +96,7 @@ export const razorpayWebhookHandler = async (req: Request) => {
       await updatePaymentStatusByGatewayOrderId(
         gatewayOrderId,
         gatewayPaymentId,
-        PAYMENT.STATUS.SUCCESS,
+        PAYMENT.STATUS.FAILED,
       );
 
       await logPaymentEvent({

@@ -8,7 +8,7 @@ import type { Gateway } from "../gateway.types";
 export const razorpayGateway: Gateway = {
   initiatePayment: async ({ amount, orderId, currency = "INR" }) => {
     const gatewayOrderId = await createRazorpayOrder(amount, currency, orderId);
-    const keyId = configs.RAZORPAY.KEY_ID as string;
+    const keyId = configs.RAZORPAY.KEY_ID;
 
     return { gatewayOrderId, keyId };
   },

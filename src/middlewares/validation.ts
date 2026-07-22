@@ -7,7 +7,7 @@ export const validator = (
 ) => {
   return (req: Request, _res: Response, next: NextFunction) => {
     if (segment === "params") {
-      schema.parse(req.params.id);
+      schema.parse(req.params);
     } else {
       req.body = schema.parse(req.body);
     }
