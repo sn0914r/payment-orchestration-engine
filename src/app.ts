@@ -23,6 +23,7 @@ app.use("/docs", async (req, res, next) => {
         url: "/docs/openapi.yml",
       },
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     middleware(req as any, res as any, next);
   } catch (error) {
     next(error);

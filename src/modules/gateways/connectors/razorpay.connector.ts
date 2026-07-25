@@ -27,7 +27,7 @@ export const razorpayGateway: Gateway = {
   },
 
   classifyError: (err) => {
-    const source = err?.error?.source;
+    const source = (err as { error?: { source?: string } })?.error?.source;
 
     if (source === "customer" || source === "business")
       return PAYMENT.ERROR_TYPES.USER_ERROR;

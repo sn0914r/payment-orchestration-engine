@@ -23,7 +23,7 @@ export interface PaymentEventType {
   fromStatus: PaymentStatus | null;
   toStatus: PaymentStatus;
   trigger: PaymentTriggeredBy;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
 }
 
 export interface GatewayAttemptType {
@@ -55,9 +55,10 @@ export interface InitiatePaymentRequestBodyShape {
 }
 
 export interface InitiatePaymentResponseShape {
-  orderId: string;
-  gateway: string;
-  method: string;
+  paymentId: string;
+  orderId?: string | null;
+  gateway: string | null;
+  paymentMethod: string;
   paymentLink?: string;
   keyId?: string;
 }

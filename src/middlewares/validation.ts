@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
-import { ZodObject, ZodUUID } from "zod";
+import { ZodType, ZodUUID } from "zod";
 
 export const validator = (
-  schema: ZodObject<any> | ZodUUID,
+  schema: ZodType | ZodUUID,
   segment: "body" | "params" = "body",
 ) => {
   return (req: Request, _res: Response, next: NextFunction) => {

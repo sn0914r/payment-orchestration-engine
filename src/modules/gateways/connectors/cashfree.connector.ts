@@ -31,7 +31,7 @@ export const cashfreeGateway: Gateway = {
       );
 
       return true;
-    } catch (err) {
+    } catch (_err) {
       return false;
     }
   },
@@ -42,7 +42,7 @@ export const cashfreeGateway: Gateway = {
   },
 
   classifyError: (err) => {
-    const message = err?.message?.toLowerCase() || "";
+    const message = (err as { message?: string })?.message?.toLowerCase() || "";
     const userMessages = [
       "invalid",
       "cancelled",

@@ -33,5 +33,5 @@ export interface Gateway {
     timestamp?: string,
   ) => boolean;
   getPaymentStatus: (orderId: string) => Promise<GatewayStatusResponse>;
-  classifyError: (err: any) => string;
+  classifyError: (err: unknown) => string;
 }

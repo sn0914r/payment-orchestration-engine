@@ -9,8 +9,8 @@ import { PAYMENT } from "@/constants";
 import type { Request, Response } from "express";
 
 export const initiatePaymentController = async (
-  req: Request<{}, {}, InitiatePaymentRequestBodyShape>,
-  res: Response<ApiResponse<InitiatePaymentResponseShape | {}>>,
+  req: Request<Record<string, never>, Record<string, never>, InitiatePaymentRequestBodyShape>,
+  res: Response<ApiResponse<InitiatePaymentResponseShape | Record<string, never>>>,
 ) => {
   const { amount, method, orderId, customer } = req.body;
 

@@ -7,7 +7,7 @@ export const deduplicateWebhook = async (
   gateway: string,
   eventId: string,
   eventType: string,
-  payload: Record<string, any>,
+  payload: Record<string, unknown>,
 ): Promise<boolean> => {
   try {
     await db.insert(WebhookEventsTable).values({
@@ -19,7 +19,7 @@ export const deduplicateWebhook = async (
 
     return false;
   } catch (error) {
-    if ((error as any).code === "23505") {
+    if ((error as { code?: string }).code === "23505") {
       logger.warn({ eventId, gateway }, "duplicate webhook received, ignoring");
       return true;
     }

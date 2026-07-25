@@ -6,11 +6,11 @@ import { ERRORCODES } from "../constants/errorCodes";
 import { AppError } from "../errors/AppError";
 
 export const globalErrorHandler = (
-  err: any,
+  err: unknown,
   _req: Request,
   res: Response,
   _next: NextFunction,
-): any => {
+) => {
   logger.error(err);
   const isProd = configs.NODE_ENV === "production";
 
@@ -38,8 +38,8 @@ export const globalErrorHandler = (
 
   res.status(500).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message: err instanceof Error ? err.message : "Internal Server Error",
     errorCode: ERRORCODES.INTERNAL_SERVER_ERROR,
-    stack: isProd ? undefined : err.stack,
+    stack: isProd ? undefined : err instanceof Error ? err.stack : undefined,
   });
 };
