@@ -14,7 +14,10 @@ const envSchema = z.object({
   CASHFREE_CLIENT_SECRET: z
     .string()
     .min(1, "CASHFREE_CLIENT_SECRET is required"),
-  INTERNAL_API_KEY: z.string().min(8, "INTERNAL_API_KEY is required and must be at least 8 characters"),
+  INTERNAL_API_KEY: z
+    .string()
+    .min(8, "INTERNAL_API_KEY is required and must be at least 8 characters"),
+  CLIENT_WEBHOOK_API: z.string(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -38,4 +41,5 @@ export const configs = {
     CLIENT_SECRET: parsed.data.CASHFREE_CLIENT_SECRET,
   },
   INTERNAL_API_KEY: parsed.data.INTERNAL_API_KEY,
+  CLIENT_WEBHOOK_API: parsed.data.CLIENT_WEBHOOK_API,
 };

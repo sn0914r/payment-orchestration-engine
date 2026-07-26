@@ -14,8 +14,14 @@ export const razorpayGateway: Gateway = {
   },
 
   verifyWebhook: (payload, signature) => {
+    const payloadString = Buffer.isBuffer(payload)
+      ? payload.toString()
+      : typeof payload === "string"
+        ? payload
+        : JSON.stringify(payload);
+
     return validateWebhookSignature(
-      JSON.stringify(payload),
+      payloadString,
       signature,
       configs.RAZORPAY.WEBHOOK_SECRET as string,
     );

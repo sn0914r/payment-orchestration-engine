@@ -13,6 +13,7 @@ import {
 import type { Request } from "express";
 import { logger } from "@/utils/logger";
 import { PaymentStatus } from "@/types";
+import { notifyClient } from "../notifyClient";
 
 export const cashfreeWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-webhook-signature"] as string;
@@ -77,6 +78,17 @@ export const cashfreeWebhookHandler = async (req: Request) => {
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
         payload: normalizedEventObject,
       });
+
+      await notifyClient({
+        orderId: currentOrder.orderId,
+        status: PAYMENT.STATUS.SUCCESS,
+        gateway: PAYMENT.GATEWAYS.CASHFREE,
+        amount: currentOrder.amount,
+        method: currentOrder.method,
+        gatewayPaymentId,
+        paymentId,
+      });
+
       logger.info("PAYMENT SUCCESS - CASHFREE");
       break;
 
@@ -93,6 +105,16 @@ export const cashfreeWebhookHandler = async (req: Request) => {
         toStatus: PAYMENT.STATUS.FAILED,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
         payload: normalizedEventObject,
+      });
+
+      await notifyClient({
+        orderId: currentOrder.orderId,
+        status: PAYMENT.STATUS.FAILED,
+        gateway: PAYMENT.GATEWAYS.CASHFREE,
+        amount: currentOrder.amount,
+        method: currentOrder.method,
+        gatewayPaymentId,
+        paymentId,
       });
       logger.info("PAYMENT FAILED - CASHFREE");
       break;

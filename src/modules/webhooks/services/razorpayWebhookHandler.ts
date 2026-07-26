@@ -13,6 +13,7 @@ import {
 } from "../webhook.repository";
 import { logPaymentEvent } from "@/modules/payments/payment.repository";
 import { PaymentStatus } from "@/types";
+import { notifyClient } from "../notifyClient";
 
 export const razorpayWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-razorpay-signature"] as string;
@@ -90,6 +91,16 @@ export const razorpayWebhookHandler = async (req: Request) => {
         payload: normalizedEventObject,
       });
 
+      await notifyClient({
+        orderId: currentOrder.orderId,
+        status: PAYMENT.STATUS.SUCCESS,
+        gateway: PAYMENT.GATEWAYS.RAZORPAY,
+        amount: currentOrder.amount,
+        method: currentOrder.method,
+        gatewayPaymentId,
+        paymentId,
+      });
+
       logger.info("PAYMENT SUCCESS");
       break;
     case "payment.failed":
@@ -105,6 +116,16 @@ export const razorpayWebhookHandler = async (req: Request) => {
         toStatus: PAYMENT.STATUS.FAILED,
         trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
         payload: normalizedEventObject,
+      });
+
+      await notifyClient({
+        orderId: currentOrder.orderId,
+        status: PAYMENT.STATUS.FAILED,
+        gateway: PAYMENT.GATEWAYS.RAZORPAY,
+        amount: currentOrder.amount,
+        method: currentOrder.method,
+        gatewayPaymentId,
+        paymentId,
       });
 
       logger.info("PAYMENT FAILED");

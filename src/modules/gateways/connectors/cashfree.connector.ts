@@ -24,9 +24,15 @@ export const cashfreeGateway: Gateway = {
 
   verifyWebhook: (payload, signature, timestamp) => {
     try {
+      const payloadString = Buffer.isBuffer(payload)
+        ? payload.toString()
+        : typeof payload === "string"
+          ? payload
+          : JSON.stringify(payload);
+
       cashfree.PGVerifyWebhookSignature(
         signature,
-        payload as string,
+        payloadString,
         timestamp as string,
       );
 
