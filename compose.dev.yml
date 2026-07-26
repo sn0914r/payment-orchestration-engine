@@ -1,0 +1,37 @@
+services:
+  payment-engine-postgres:
+    image: postgres:15
+    container_name: poe-postgres
+    environment:
+      POSTGRES_USER: sivananda
+      POSTGRES_PASSWORD: sivananda123
+      POSTGRES_DB: payment_orchestration
+    ports:
+      - "5433:5432"
+    volumes:
+      - poe-volume:/var/lib/postgres/data
+    networks:
+      - poe-network
+
+  payment-engine-service:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://sivananda:sivananda123@payment-engine-postgres:5432/payment_orchestration
+    depends_on:
+      - payment-engine-postgres
+    networks:
+      - poe-network
+
+volumes:
+  poe-volume:
+
+networks:
+  poe-network:
