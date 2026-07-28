@@ -3,10 +3,20 @@ import { createCashfreeOrder } from "../providers/cashfree.provider";
 import crypto from "crypto";
 import { PAYMENT } from "@/constants";
 import type { Gateway } from "../gateway.types";
+import { cashfreePaymentMethodMap } from "../gateway.helpers";
 
 export const cashfreeGateway: Gateway = {
-  initiatePayment: async ({ amount, customer: { id, phone, email } }) => {
-    const { gatewayOrderId, paymentSession } = await createCashfreeOrder({
+  initiatePayment: async ({
+    amount,
+    method,
+    customer: { id, phone, email },
+  }) => {
+    const payment_methods = method
+      ? cashfreePaymentMethodMap[method]
+      : undefined;
+    const order_meta = payment_methods ? { payment_methods } : undefined;
+
+    const requestPayload: any = {
       order_id: crypto.randomUUID(),
       order_amount: amount,
       customer_details: {
@@ -14,7 +24,11 @@ export const cashfreeGateway: Gateway = {
         customer_phone: phone,
         customer_email: email,
       },
-    });
+      order_meta,
+    };
+
+    const { gatewayOrderId, paymentSession } =
+      await createCashfreeOrder(requestPayload);
 
     return {
       gatewayOrderId: gatewayOrderId as string,

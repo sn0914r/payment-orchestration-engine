@@ -13,8 +13,7 @@ export const getGatewayByRules = (
   if (method === PAYMENT.METHOD.UPI) return CASHFREE;
   if (method === PAYMENT.METHOD.CARD) return RAZORPAY;
   if (method === PAYMENT.METHOD.NETBANKING) return RAZORPAY;
-  if (method === PAYMENT.METHOD.WALLET) return CASHFREE;
-  if (method === PAYMENT.METHOD.EMI) return RAZORPAY;
+  if (method === PAYMENT.METHOD.WALLET) return RAZORPAY;
 
   return RAZORPAY;
 };
