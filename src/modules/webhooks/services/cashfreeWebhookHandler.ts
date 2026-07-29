@@ -4,16 +4,14 @@ import {
   deduplicateWebhook,
   markWebhookProcessed,
 } from "../webhook.deduplication";
-import { logPaymentEvent } from "@/modules/payments/payment.repository";
-import { assertValidWebhookSignature } from "../webhook.helpers";
 import {
-  findOrderByGatewayOrderId,
-  updatePaymentStatusByGatewayOrderId,
-} from "../webhook.repository";
+  assertValidWebhookSignature,
+  processPaymentStatusChange,
+} from "../webhook.helpers";
+import { findOrderByGatewayOrderId } from "../webhook.repository";
 import type { Request } from "express";
 import { logger } from "@/utils/logger";
 import { PaymentStatus } from "@/types";
-import { notifyClient } from "../notifyClient";
 
 export const cashfreeWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-webhook-signature"] as string;
@@ -63,59 +61,33 @@ export const cashfreeWebhookHandler = async (req: Request) => {
       logger.info(
         `PAYMENT_SUCCESS_EVENT HIT FROM CASHFREE WEBHOOK, PAYMENT ID IS: ${paymentId}`,
       );
-      if (currentStatus === PAYMENT.STATUS.SUCCESS) break;
 
-      await updatePaymentStatusByGatewayOrderId(
+      await processPaymentStatusChange({
+        newStatus: PAYMENT.STATUS.SUCCESS,
+        currentStatus,
+        currentOrder,
         gatewayOrderId,
         gatewayPaymentId,
-        PAYMENT.STATUS.SUCCESS,
-      );
-
-      await logPaymentEvent({
         paymentId,
-        fromStatus: currentStatus,
-        toStatus: PAYMENT.STATUS.SUCCESS,
-        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedEventObject,
-      });
-
-      await notifyClient({
-        orderId: currentOrder.orderId,
-        status: PAYMENT.STATUS.SUCCESS,
-        gateway: PAYMENT.GATEWAYS.CASHFREE,
-        amount: currentOrder.amount,
-        method: currentOrder.method,
-        gatewayPaymentId,
-        paymentId,
+        gatewayName: PAYMENT.GATEWAYS.CASHFREE,
+        normalizedEventObject,
       });
 
       logger.info("PAYMENT SUCCESS - CASHFREE");
       break;
 
     case "PAYMENT_FAILED_WEBHOOK":
-      await updatePaymentStatusByGatewayOrderId(
+      await processPaymentStatusChange({
+        newStatus: PAYMENT.STATUS.FAILED,
+        currentStatus,
+        currentOrder,
         gatewayOrderId,
         gatewayPaymentId,
-        PAYMENT.STATUS.FAILED,
-      );
-
-      await logPaymentEvent({
         paymentId,
-        fromStatus: currentStatus,
-        toStatus: PAYMENT.STATUS.FAILED,
-        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedEventObject,
+        gatewayName: PAYMENT.GATEWAYS.CASHFREE,
+        normalizedEventObject,
       });
 
-      await notifyClient({
-        orderId: currentOrder.orderId,
-        status: PAYMENT.STATUS.FAILED,
-        gateway: PAYMENT.GATEWAYS.CASHFREE,
-        amount: currentOrder.amount,
-        method: currentOrder.method,
-        gatewayPaymentId,
-        paymentId,
-      });
       logger.info("PAYMENT FAILED - CASHFREE");
       break;
   }

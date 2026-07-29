@@ -6,14 +6,12 @@ import {
   markWebhookProcessed,
 } from "../webhook.deduplication";
 import { razorpayGateway } from "@/modules/gateways/connectors/razorpay.connector";
-import { assertValidWebhookSignature } from "../webhook.helpers";
 import {
-  findOrderByGatewayOrderId,
-  updatePaymentStatusByGatewayOrderId,
-} from "../webhook.repository";
-import { logPaymentEvent } from "@/modules/payments/payment.repository";
+  assertValidWebhookSignature,
+  processPaymentStatusChange,
+} from "../webhook.helpers";
+import { findOrderByGatewayOrderId } from "../webhook.repository";
 import { PaymentStatus } from "@/types";
-import { notifyClient } from "../notifyClient";
 
 export const razorpayWebhookHandler = async (req: Request) => {
   const signature = req.headers["x-razorpay-signature"] as string;
@@ -57,75 +55,43 @@ export const razorpayWebhookHandler = async (req: Request) => {
 
   switch (webhookPayload.event) {
     case "payment.authorized":
-      await updatePaymentStatusByGatewayOrderId(
+      await processPaymentStatusChange({
+        newStatus: PAYMENT.STATUS.PROCESSING,
+        currentStatus,
+        currentOrder,
         gatewayOrderId,
         gatewayPaymentId,
-        PAYMENT.STATUS.PROCESSING,
-      );
-
-      await logPaymentEvent({
         paymentId,
-        fromStatus: currentStatus,
-        toStatus: PAYMENT.STATUS.PROCESSING,
-        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedEventObject,
+        gatewayName: PAYMENT.GATEWAYS.RAZORPAY,
+        normalizedEventObject,
       });
 
       logger.info("PAYMENT PROCESSING");
       break;
     case "payment.captured":
-      // INFO: razorpay can send the same event multiple times so this statement prevent success to success events
-      if (currentStatus === PAYMENT.STATUS.SUCCESS) break;
-
-      await updatePaymentStatusByGatewayOrderId(
+      await processPaymentStatusChange({
+        newStatus: PAYMENT.STATUS.SUCCESS,
+        currentStatus,
+        currentOrder,
         gatewayOrderId,
         gatewayPaymentId,
-        PAYMENT.STATUS.SUCCESS,
-      );
-
-      await logPaymentEvent({
         paymentId,
-        fromStatus: currentStatus,
-        toStatus: PAYMENT.STATUS.SUCCESS,
-        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedEventObject,
-      });
-
-      await notifyClient({
-        orderId: currentOrder.orderId,
-        status: PAYMENT.STATUS.SUCCESS,
-        gateway: PAYMENT.GATEWAYS.RAZORPAY,
-        amount: currentOrder.amount,
-        method: currentOrder.method,
-        gatewayPaymentId,
-        paymentId,
+        gatewayName: PAYMENT.GATEWAYS.RAZORPAY,
+        normalizedEventObject,
       });
 
       logger.info("PAYMENT SUCCESS");
       break;
     case "payment.failed":
-      await updatePaymentStatusByGatewayOrderId(
+      await processPaymentStatusChange({
+        newStatus: PAYMENT.STATUS.FAILED,
+        currentStatus,
+        currentOrder,
         gatewayOrderId,
         gatewayPaymentId,
-        PAYMENT.STATUS.FAILED,
-      );
-
-      await logPaymentEvent({
         paymentId,
-        fromStatus: currentStatus,
-        toStatus: PAYMENT.STATUS.FAILED,
-        trigger: PAYMENT.TRIGGERS.WEBHOOK_RECEIVED,
-        payload: normalizedEventObject,
-      });
-
-      await notifyClient({
-        orderId: currentOrder.orderId,
-        status: PAYMENT.STATUS.FAILED,
-        gateway: PAYMENT.GATEWAYS.RAZORPAY,
-        amount: currentOrder.amount,
-        method: currentOrder.method,
-        gatewayPaymentId,
-        paymentId,
+        gatewayName: PAYMENT.GATEWAYS.RAZORPAY,
+        normalizedEventObject,
       });
 
       logger.info("PAYMENT FAILED");
