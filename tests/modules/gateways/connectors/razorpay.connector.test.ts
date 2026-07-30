@@ -1,9 +1,9 @@
-import { razorpayGateway } from "./razorpay.connector";
-import { createRazorpayOrder } from "../providers/razorpay.provider";
+import { razorpayGateway } from "@/modules/gateways/connectors/razorpay.connector";
+import { createRazorpayOrder } from "@/modules/gateways/providers/razorpay.provider";
 import { razorpay } from "@/clients/razorpay";
 import { PAYMENT } from "@/constants";
 
-jest.mock("../providers/razorpay.provider");
+jest.mock("@/modules/gateways/providers/razorpay.provider");
 
 jest.mock("@/clients/razorpay", () => ({
   razorpay: {

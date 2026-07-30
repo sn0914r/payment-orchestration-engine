@@ -1,9 +1,15 @@
-import { getPaymentRecord } from "./getPaymentRecord";
-import { findPaymentByPaymentId } from "../payment.repository";
+import { getPaymentRecord } from "@/modules/payments/services/getPaymentRecord";
+import { findPaymentByPaymentId } from "@/modules/payments/payment.repository";
 import { AppError } from "@/errors/AppError";
 import { ERRORCODES } from "@/constants";
 
-jest.mock("../payment.repository");
+jest.mock("@/configs", () => ({
+  configs: {
+    CASHFREE: { CLIENT_ID: "test_id", CLIENT_SECRET: "test_secret" },
+    RAZORPAY: { KEY_ID: "test_key", WEBHOOK_SECRET: "test_secret" },
+  },
+}));
+jest.mock("@/modules/payments/payment.repository");
 
 const mockFindPaymentByPaymentId =
   findPaymentByPaymentId as jest.MockedFunction<typeof findPaymentByPaymentId>;

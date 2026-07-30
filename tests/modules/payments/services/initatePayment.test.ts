@@ -1,4 +1,4 @@
-import { initiatePayment } from "./initiatePayment";
+import { initiatePayment } from "@/modules/payments/services/initiatePayment";
 import {
   findOrderByOrderId,
   insertPaymentRecord,
@@ -6,7 +6,7 @@ import {
   logGatewayAttempt,
   markPaymentRecordFailed,
   updatePaymentRecordGatewayDetails,
-} from "../payment.repository";
+} from "@/modules/payments/payment.repository";
 import { getGateway } from "@/modules/gateways/gateway.factory";
 import {
   getRoutingGateway,
@@ -15,7 +15,13 @@ import {
 import { AppError } from "@/errors/AppError";
 import { ERRORCODES, PAYMENT } from "@/constants";
 
-jest.mock("../payment.repository");
+jest.mock("@/configs", () => ({
+  configs: {
+    CASHFREE: { CLIENT_ID: "test_id", CLIENT_SECRET: "test_secret" },
+    RAZORPAY: { KEY_ID: "test_key", WEBHOOK_SECRET: "test_secret" },
+  },
+}));
+jest.mock("@/modules/payments/payment.repository");
 jest.mock("@/modules/gateways/gateway.factory");
 jest.mock("@/modules/routing/routing.service");
 

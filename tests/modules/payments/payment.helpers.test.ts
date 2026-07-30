@@ -2,7 +2,7 @@ import {
   assertOrderNotAlreadyPaid,
   assertPaymentRecordCreated,
   transformPaymentRecord,
-} from "./payment.helpers";
+} from "@/modules/payments/payment.helpers";
 import { AppError } from "@/errors/AppError";
 import { ERRORCODES, PAYMENT } from "@/constants";
 

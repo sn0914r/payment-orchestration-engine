@@ -1,9 +1,9 @@
-import { cashfreeGateway } from "./cashfree.connector";
-import { createCashfreeOrder } from "../providers/cashfree.provider";
+import { cashfreeGateway } from "@/modules/gateways/connectors/cashfree.connector";
+import { createCashfreeOrder } from "@/modules/gateways/providers/cashfree.provider";
 import { cashfree } from "@/clients/cashfree";
 import { PAYMENT } from "@/constants";
 
-jest.mock("../providers/cashfree.provider");
+jest.mock("@/modules/gateways/providers/cashfree.provider");
 
 jest.mock("@/clients/cashfree", () => ({
   cashfree: {
@@ -53,6 +53,9 @@ describe("initiatePayment", () => {
         customer_id: "cust-001",
         customer_phone: "9999999999",
         customer_email: "test@example.com",
+      },
+      order_meta: {
+        payment_methods: "upi",
       },
     });
   });
@@ -116,6 +119,9 @@ describe("initiatePayment", () => {
           customer_phone: "8888888888",
           customer_email: undefined,
         }),
+        order_meta: {
+          payment_methods: "upi",
+        },
       }),
     );
   });
