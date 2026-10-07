@@ -9,6 +9,16 @@ export const notifyClient = async (payload: NotifyClientType) => {
     .update(JSON.stringify(payload))
     .digest("hex");
 
+  logger.info(
+    {
+      orderId: payload.orderId,
+      status: payload.status,
+      gateway: payload.gateway,
+      endpoint: configs.CLIENT_WEBHOOK_API,
+    },
+    "Firing webhook to client",
+  );
+
   try {
     const response = await fetch(configs.CLIENT_WEBHOOK_API, {
       method: "POST",
@@ -23,6 +33,11 @@ export const notifyClient = async (payload: NotifyClientType) => {
       logger.error(
         { orderId: payload.orderId, status: response.status },
         "eKart webhook returned an error status",
+      );
+    } else {
+      logger.info(
+        { orderId: payload.orderId, status: response.status },
+        "Client webhook delivered successfully",
       );
     }
   } catch (error) {
