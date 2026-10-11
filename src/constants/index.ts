@@ -1,2 +1,2 @@
-export { PAYMENT } from "./payment";
+export { PAYMENT, RECONCILIATION } from "./payment";
 export { ERRORCODES } from "./errorCodes";

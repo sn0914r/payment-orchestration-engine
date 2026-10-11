@@ -42,3 +42,17 @@ export const PAYMENT = {
     ERROR: "ERROR",
   },
 } as const;
+
+export const RECONCILIATION = {
+  STATUS: {
+    RUNNING: "RUNNING",
+    COMPLETED: "COMPLETED",
+    FAILED: "FAILED",
+  },
+  MISMATCH_TYPE: {
+    MISSING_IN_GATEWAY: "MISSING_IN_GATEWAY",
+    MISSING_IN_DB: "MISSING_IN_DB",
+    AMOUNT_MISMATCH: "AMOUNT_MISMATCH",
+    STATUS_MISMATCH: "STATUS_MISMATCH",
+  },
+} as const;

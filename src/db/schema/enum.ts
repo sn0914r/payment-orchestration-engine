@@ -1,5 +1,5 @@
 import { pgEnum } from "drizzle-orm/pg-core";
-import { PAYMENT } from "@/constants";
+import { PAYMENT, RECONCILIATION } from "@/constants";
 
 export const errorTypeEnum = pgEnum(
   "payment_error_type",
@@ -29,4 +29,14 @@ export const paymentMethodEnum = pgEnum(
 export const paymentEventTriggerEnum = pgEnum(
   "payment_event_trigger",
   Object.values(PAYMENT.TRIGGERS) as [string, ...string[]],
+);
+
+export const reconciliationRunStatusEnum = pgEnum(
+  "reconciliation_run_status",
+  Object.values(RECONCILIATION.STATUS) as [string, ...string[]],
+);
+
+export const reconciliationMismatchTypeEnum = pgEnum(
+  "reconciliation_mismatch_type",
+  Object.values(RECONCILIATION.MISMATCH_TYPE) as [string, ...string[]],
 );
