@@ -1,4 +1,7 @@
 import { RECONCILIATION, PAYMENT } from "@/constants";
+import { PaymentsTable } from "@/db/schema";
+
+export type InternalPayment = typeof PaymentsTable.$inferSelect;
 
 export type MismatchType =
   (typeof RECONCILIATION.MISMATCH_TYPE)[keyof typeof RECONCILIATION.MISMATCH_TYPE];
@@ -18,9 +21,21 @@ export interface SettlementTransaction {
   settledAt?: Date;
 }
 
+export interface SettlementStrategy {
+  fetchSettlements(targetDate: string): Promise<SettlementTransaction[]>;
+}
+
 export interface TriggerReconciliationInput {
   date: string; // YYYY-MM-DD
   gateway: GatewayName;
+}
+
+export interface ReconciliationRunResult {
+  runId: string;
+  status: ReconciliationRunStatus;
+  totalTransactions: number;
+  matchedCount: number;
+  mismatchCount: number;
 }
 
 export interface MismatchRecord {
@@ -32,4 +47,10 @@ export interface MismatchRecord {
   gatewayAmount?: number;
   ourStatus?: string;
   gatewayStatus?: string;
+}
+
+export interface LedgerComparisonResult {
+  matchedCount: number;
+  mismatches: MismatchRecord[];
+  ghostCount: number;
 }

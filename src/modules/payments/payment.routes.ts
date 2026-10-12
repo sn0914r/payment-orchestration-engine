@@ -1,9 +1,6 @@
 import { Router } from "express";
 import { idempotencyMiddleware } from "./payment.middlewares";
-import {
-  getPaymentRecordController,
-  initiatePaymentController,
-} from "./payment.controllers";
+import { PaymentController } from "./payment.controllers";
 import { validator } from "@/middlewares/validation";
 import { InitiatePaymentSchema, PaymentIdSchema } from "./payment.schemas";
 
@@ -13,11 +10,11 @@ paymentRouter.post(
   "/initiate",
   idempotencyMiddleware,
   validator(InitiatePaymentSchema),
-  initiatePaymentController,
+  PaymentController.initiate,
 );
 
 paymentRouter.get(
   "/:id",
   validator(PaymentIdSchema, "params"),
-  getPaymentRecordController,
+  PaymentController.getById,
 );

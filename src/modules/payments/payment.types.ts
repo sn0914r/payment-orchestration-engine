@@ -1,12 +1,34 @@
-import { PaymentGateway } from "../gateways/gateway.types";
-import {
+import { PaymentsTable } from "@/db/schema";
+import type {
+  ApiResponse,
   PaymentMethod,
   PaymentStatus,
   PaymentTriggeredBy,
   GatewayAttemptStatus,
+  PaymentGatewayName,
+  PaymentAuditEvent,
 } from "@/types";
+import type { GatewayResponse } from "../gateways/gateway.types";
 
-export interface InitiatePaymentType {
+export type {
+  ApiResponse,
+  PaymentMethod,
+  PaymentStatus,
+  PaymentTriggeredBy,
+  GatewayAttemptStatus,
+  PaymentGatewayName,
+  PaymentAuditEvent,
+  GatewayResponse,
+};
+
+export type PaymentRecord = typeof PaymentsTable.$inferSelect;
+
+export interface PaymentExecutionResult {
+  gateway: PaymentGatewayName;
+  response: GatewayResponse;
+}
+
+export interface InitiatePaymentInput {
   amountInRupees: number;
   method: PaymentMethod;
   orderId: string;
@@ -18,32 +40,24 @@ export interface InitiatePaymentType {
   };
 }
 
-export interface PaymentEventType {
+export interface GatewayAttemptPayload {
   paymentId: string;
-  fromStatus: PaymentStatus | null;
-  toStatus: PaymentStatus;
-  trigger: PaymentTriggeredBy;
-  payload: Record<string, unknown>;
-}
-
-export interface GatewayAttemptType {
-  paymentId: string;
-  gateway: PaymentGateway;
+  gateway: PaymentGatewayName;
   status: GatewayAttemptStatus;
   errorType?: string;
   errorCode?: string;
 }
 
-export interface InitiatePaymentReturnType {
+export interface InitiatePaymentResult {
   paymentId: string;
   orderId?: string | null;
-  gateway: PaymentGateway | null;
+  gateway: PaymentGatewayName | null;
   paymentLink?: string;
   keyId?: string;
   paymentMethod: PaymentMethod;
 }
 
-export interface InitiatePaymentRequestBodyShape {
+export interface InitiatePaymentRequestBody {
   amount: number;
   method: string;
   orderId: string;
@@ -54,7 +68,7 @@ export interface InitiatePaymentRequestBodyShape {
   };
 }
 
-export interface InitiatePaymentResponseShape {
+export interface InitiatePaymentResponseBody {
   paymentId: string;
   orderId?: string | null;
   gateway: string | null;

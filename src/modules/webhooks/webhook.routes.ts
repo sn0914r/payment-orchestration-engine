@@ -1,20 +1,16 @@
-import { Router } from "express";
-import {
-  cashfreeWebhookController,
-  razorpayWebhookController,
-} from "./webhook.controllers";
-import express from "express";
+import express, { Router } from "express";
+import { WebhookController } from "./webhook.controllers";
 
 export const webhookRouter = Router();
 
 webhookRouter.post(
   "/razorpay",
   express.raw({ type: "application/json" }),
-  razorpayWebhookController,
+  WebhookController.razorpay,
 );
 
 webhookRouter.post(
   "/cashfree",
   express.raw({ type: "application/json" }),
-  cashfreeWebhookController,
+  WebhookController.cashfree,
 );

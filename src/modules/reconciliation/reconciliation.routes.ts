@@ -1,11 +1,6 @@
 import { Router } from "express";
 import { validator } from "@/middlewares/validation";
-import {
-  triggerReconciliationController,
-  getReconciliationRunsController,
-  getRunMismatchesController,
-  resolveMismatchController,
-} from "./reconciliation.controller";
+import { ReconciliationController } from "./reconciliation.controller";
 import {
   TriggerReconciliationSchema,
   RunIdParamSchema,
@@ -18,20 +13,23 @@ export const reconciliationRouter = Router();
 reconciliationRouter.post(
   "/run",
   validator(TriggerReconciliationSchema),
-  triggerReconciliationController,
+  ReconciliationController.triggerReconciliation,
 );
 
-reconciliationRouter.get("/runs", getReconciliationRunsController);
+reconciliationRouter.get(
+  "/runs",
+  ReconciliationController.getReconciliationRuns,
+);
 
 reconciliationRouter.get(
   "/runs/:runId/mismatches",
   validator(RunIdParamSchema, "params"),
-  getRunMismatchesController,
+  ReconciliationController.getRunMismatches,
 );
 
 reconciliationRouter.patch(
   "/mismatches/:id/resolve",
   validator(MismatchIdParamSchema, "params"),
   validator(ResolveMismatchSchema),
-  resolveMismatchController,
+  ReconciliationController.resolveMismatch,
 );

@@ -28,3 +28,14 @@ export type PaymentTriggeredBy =
 
 export type GatewayAttemptStatus =
   (typeof PAYMENT.GATEWAY_ATTEMPTS_STATUS)[keyof typeof PAYMENT.GATEWAY_ATTEMPTS_STATUS];
+
+export type PaymentGatewayName =
+  (typeof PAYMENT.GATEWAYS)[keyof typeof PAYMENT.GATEWAYS];
+
+export interface PaymentAuditEvent {
+  paymentId: string;
+  fromStatus: PaymentStatus | null;
+  toStatus: PaymentStatus;
+  trigger: PaymentTriggeredBy;
+  payload: Record<string, unknown>;
+}

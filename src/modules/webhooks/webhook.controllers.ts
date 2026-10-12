@@ -1,32 +1,33 @@
 import type { Request, Response } from "express";
-import {
-  razorpayWebhookHandler,
-  cashfreeWebhookHandler,
-} from "./services/index";
 import { logger } from "@/utils/logger";
+import { PAYMENT } from "@/constants";
+import { WebhookProcessorFactory } from "./webhook.service";
+import type { PaymentGatewayName } from "./webhook.types";
 
-export const razorpayWebhookController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    await razorpayWebhookHandler(req);
-  } catch (err) {
-    logger.error({ err }, "Razorpay webhook processing failed internally");
+export class WebhookController {
+  private static async handle(
+    gateway: PaymentGatewayName,
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    try {
+      const processor = WebhookProcessorFactory.getProcessor(gateway);
+      await processor.execute(req.body, req.headers);
+    } catch (error) {
+      logger.error(
+        { error, gateway },
+        `${gateway} webhook processing failed internally`,
+      );
+    }
+
+    res.status(200).json({ success: true });
   }
 
-  res.status(200).json({ success: true });
-};
-
-export const cashfreeWebhookController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    await cashfreeWebhookHandler(req);
-  } catch (err) {
-    logger.error({ err }, "Cashfree webhook processing failed internally");
+  public static async razorpay(req: Request, res: Response): Promise<void> {
+    await WebhookController.handle(PAYMENT.GATEWAYS.RAZORPAY, req, res);
   }
 
-  res.status(200).json({ success: true });
-};
+  public static async cashfree(req: Request, res: Response): Promise<void> {
+    await WebhookController.handle(PAYMENT.GATEWAYS.CASHFREE, req, res);
+  }
+}

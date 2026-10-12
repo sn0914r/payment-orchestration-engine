@@ -1,24 +1,26 @@
 import { AppError } from "@/errors/AppError";
 import { ERRORCODES } from "@/constants/errorCodes";
-import { cashfreeGateway } from "./connectors/cashfree.connector";
-import { razorpayGateway } from "./connectors/razorpay.connector";
-import type { Gateway, PaymentGateway } from "./gateway.types";
+import { CashfreeGateway } from "./adapters/cashfree.adapter";
+import { RazorpayGateway } from "./adapters/razorpay.adapter";
+import type { Gateway, PaymentGatewayName } from "./gateway.types";
 
-const gateways: Record<string, Gateway> = {
-  razorpay: razorpayGateway,
-  cashfree: cashfreeGateway,
-};
+export class GatewayFactory {
+  private static gateways: Record<string, Gateway> = {
+    razorpay: new RazorpayGateway(),
+    cashfree: new CashfreeGateway(),
+  };
 
-export const getGateway = (name: PaymentGateway): Gateway => {
-  const gateway = gateways[name];
+  public static getGateway(name: PaymentGatewayName): Gateway {
+    const gateway = this.gateways[name];
 
-  if (!gateway) {
-    throw new AppError(
-      `Unknown gateway: ${name}`,
-      400,
-      ERRORCODES.INVALID_GATEWAY,
-    );
+    if (!gateway) {
+      throw new AppError(
+        `Unknown gateway: ${name}`,
+        400,
+        ERRORCODES.INVALID_GATEWAY,
+      );
+    }
+
+    return gateway;
   }
-
-  return gateway;
-};
+}

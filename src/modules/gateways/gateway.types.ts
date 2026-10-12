@@ -1,7 +1,6 @@
-import { PAYMENT } from "@/constants/payment";
+import type { PaymentGatewayName } from "@/types";
 
-export type PaymentGateway =
-  (typeof PAYMENT.GATEWAYS)[keyof typeof PAYMENT.GATEWAYS];
+export type { PaymentGatewayName };
 
 export interface InitiatePaymentData {
   amount: number;
@@ -26,12 +25,12 @@ export type GatewayStatusResponse = {
 };
 
 export interface Gateway {
-  initiatePayment: (data: InitiatePaymentData) => Promise<GatewayResponse>;
-  verifyWebhook: (
+  initiatePayment(data: InitiatePaymentData): Promise<GatewayResponse>;
+  verifyWebhook(
     payload: unknown,
     signature: string,
     timestamp?: string,
-  ) => boolean;
-  getPaymentStatus: (orderId: string) => Promise<GatewayStatusResponse>;
-  classifyError: (err: unknown) => string;
+  ): boolean;
+  getPaymentStatus(orderId: string): Promise<GatewayStatusResponse>;
+  classifyError(err: unknown): string;
 }

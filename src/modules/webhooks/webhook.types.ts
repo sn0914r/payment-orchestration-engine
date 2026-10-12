@@ -1,5 +1,26 @@
 import { PaymentsTable } from "@/db/schema";
-import type { PaymentStatus } from "@/types";
+import type {
+  PaymentAuditEvent,
+  PaymentGatewayName,
+  PaymentMethod,
+  PaymentStatus,
+} from "@/types";
+
+export type {
+  PaymentAuditEvent,
+  PaymentGatewayName,
+  PaymentMethod,
+  PaymentStatus,
+};
+
+export interface ParsedWebhookPayload {
+  eventId: string;
+  eventType: string;
+  gatewayOrderId: string;
+  gatewayPaymentId: string;
+  newStatus: PaymentStatus | null;
+  rawPayload: Record<string, unknown>;
+}
 
 export type NormalizedWebhookPayload = {
   eventId: string;
@@ -8,17 +29,8 @@ export type NormalizedWebhookPayload = {
   gatewayPaymentId: string;
 };
 
-export type NotifyClientType = {
-  orderId: string;
-  status: string;
-  gateway: string;
-  amount: number;
-  method: string;
-  gatewayPaymentId: string;
-  paymentId: string;
-};
 
-export type ProcessPaymentProps = {
+export type PaymentStatusUpdatePayload = {
   newStatus: PaymentStatus;
   currentStatus: PaymentStatus;
   currentOrder: typeof PaymentsTable.$inferSelect;
@@ -28,3 +40,17 @@ export type ProcessPaymentProps = {
   gatewayName: string;
   normalizedEventObject: NormalizedWebhookPayload;
 };
+
+export interface PaymentStatusChangedEvent {
+  orderId: string;
+  paymentId: string;
+  status: PaymentStatus;
+  gateway: PaymentGatewayName;
+  amount: number;
+  method: PaymentMethod;
+  gatewayPaymentId?: string;
+}
+
+export type PaymentEventListener = (
+  event: PaymentStatusChangedEvent,
+) => Promise<void>;

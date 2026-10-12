@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { runReconciliationService } from "@/modules/reconciliation/reconciliation.service";
+import { ReconciliationService } from "@/modules/reconciliation/reconciliation.service";
 import { PAYMENT } from "@/constants";
 import { logger } from "@/utils/logger";
 
@@ -16,12 +16,12 @@ export const initReconciliationJob = () => {
     logger.info({ date: yesterday }, "Starting nightly automated reconciliation job");
 
     try {
-      await runReconciliationService({
+      await ReconciliationService.run({
         date: yesterday,
         gateway: PAYMENT.GATEWAYS.RAZORPAY,
       });
 
-      await runReconciliationService({
+      await ReconciliationService.run({
         date: yesterday,
         gateway: PAYMENT.GATEWAYS.CASHFREE,
       });
