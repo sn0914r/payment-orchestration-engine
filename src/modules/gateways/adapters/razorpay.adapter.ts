@@ -5,9 +5,11 @@ import { PAYMENT } from "@/constants";
 import { toPayloadString } from "../gateway.helpers";
 import type {
   Gateway,
+  GatewayRefundResponse,
   GatewayResponse,
   GatewayStatusResponse,
   InitiatePaymentData,
+  RefundPaymentData,
 } from "../gateway.types";
 
 type RazorpayError = {
@@ -25,6 +27,22 @@ export class RazorpayGateway implements Gateway {
     });
 
     return { gatewayOrderId: razorpayOrder.id, keyId: configs.RAZORPAY.KEY_ID };
+  }
+
+  async refundPayment(data: RefundPaymentData): Promise<GatewayRefundResponse> {
+    const refund = await razorpay.payments.refund(data.gatewayPaymentId, {
+      amount: data.amountInPaise,
+      notes: data.reason ? { reason: data.reason } : undefined,
+    });
+
+    return {
+      gatewayRefundId: String(refund.id),
+      status: refund.status || "processed",
+      amountInPaise:
+        typeof refund.amount === "number"
+          ? refund.amount
+          : Number(refund.amount),
+    };
   }
 
   verifyWebhook(payload: unknown, signature: string): boolean {

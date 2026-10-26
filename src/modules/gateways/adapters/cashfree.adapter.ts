@@ -3,9 +3,11 @@ import crypto from "crypto";
 import { PAYMENT } from "@/constants";
 import type {
   Gateway,
+  GatewayRefundResponse,
   GatewayResponse,
   GatewayStatusResponse,
   InitiatePaymentData,
+  RefundPaymentData,
 } from "../gateway.types";
 import { mapCashfreePaymentMethod, toPayloadString } from "../gateway.helpers";
 
@@ -30,6 +32,23 @@ export class CashfreeGateway implements Gateway {
     return {
       gatewayOrderId: gatewayResponse.data.order_id as string,
       paymentLink: gatewayResponse.data.payment_session_id,
+    };
+  }
+
+  async refundPayment(data: RefundPaymentData): Promise<GatewayRefundResponse> {
+    const orderId = (data.gatewayOrderId || data.gatewayPaymentId) as string;
+    const response = await cashfree.PGOrderCreateRefund(orderId, {
+      refund_amount: data.amountInPaise / 100,
+      refund_id: crypto.randomUUID(),
+      refund_note: data.reason || "Refund requested",
+    });
+
+    return {
+      gatewayRefundId: String(
+        response.data.cf_refund_id || response.data.refund_id,
+      ),
+      status: (response.data.refund_status as string) || "SUCCESS",
+      amountInPaise: Math.round(Number(response.data.refund_amount) * 100),
     };
   }
 

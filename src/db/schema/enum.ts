@@ -40,3 +40,9 @@ export const reconciliationMismatchTypeEnum = pgEnum(
   "reconciliation_mismatch_type",
   Object.values(RECONCILIATION.MISMATCH_TYPE) as [string, ...string[]],
 );
+
+export const refundStatusEnum = pgEnum(
+  "refund_status",
+  Object.values(PAYMENT.REFUND_STATUS) as [string, ...string[]],
+);
+

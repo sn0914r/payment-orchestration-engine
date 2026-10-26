@@ -9,6 +9,14 @@ export const PAYMENT = {
     PROCESSING: "processing",
     SUCCESS: "success",
     FAILED: "failed",
+    PARTIALLY_REFUNDED: "partially_refunded",
+    REFUNDED: "refunded",
+  },
+
+  REFUND_STATUS: {
+    PENDING: "pending",
+    PROCESSED: "processed",
+    FAILED: "failed",
   },
 
   METHOD: {

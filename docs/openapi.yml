@@ -206,6 +206,141 @@ paths:
                   success:
                     type: boolean
                     example: true
+  /refunds:
+    post:
+      tags:
+        - Refunds
+      summary: Initiate a refund
+      description: Initiates a full or partial refund for a successful payment.
+      parameters:
+        - name: idempotency-key
+          in: header
+          required: true
+          description: "A unique identifier (like a UUID) to prevent duplicate refunds."
+          schema:
+            type: string
+            example: "test_refund_key_101"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+                - amountInRupees
+              properties:
+                paymentId:
+                  type: string
+                  format: uuid
+                  example: "a3b39835-a96d-4752-ac18-edeca4d1497c"
+                amountInRupees:
+                  type: number
+                  minimum: 0.01
+                  example: 100
+                reason:
+                  type: string
+                  example: "Customer requested return"
+      responses:
+        "201":
+          description: Refund initiated and processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Refund'
+        "200":
+          description: Idempotent replay - refund was already processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Request has already been processed. Returning the existing refund"
+                  data:
+                    $ref: '#/components/schemas/Refund'
+        "400":
+          description: Invalid request, amount exceeds balance, or invalid payment status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /refunds/{id}:
+    get:
+      tags:
+        - Refunds
+      summary: Get refund by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "a34a4f2b-6219-4365-9b37-118e0c7e193b"
+      responses:
+        "200":
+          description: Refund retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Refund'
+        "404":
+          description: Refund not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /refunds/payment/{paymentId}:
+    get:
+      tags:
+        - Refunds
+      summary: Get all refunds for a payment
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "a3b39835-a96d-4752-ac18-edeca4d1497c"
+      responses:
+        "200":
+          description: List of refunds for the payment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Refund'
   /health:
     get:
       tags:
@@ -222,6 +357,51 @@ paths:
                 example: ok
 components:
   schemas:
+    Refund:
+      type: object
+      properties:
+        refundId:
+          type: string
+          format: uuid
+          example: "a34a4f2b-6219-4365-9b37-118e0c7e193b"
+        paymentId:
+          type: string
+          format: uuid
+          example: "a3b39835-a96d-4752-ac18-edeca4d1497c"
+        gateway:
+          type: string
+          enum: [razorpay, cashfree]
+          example: "cashfree"
+        gatewayRefundId:
+          type: string
+          nullable: true
+          example: "1319938666"
+        amountInRupees:
+          type: number
+          example: 100
+        status:
+          type: string
+          enum: [pending, processed, failed]
+          example: "processed"
+        reason:
+          type: string
+          nullable: true
+          example: "Customer requested return"
+        createdAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+        errorCode:
+          type: string
+          example: "ERROR_CODE"
     ValidationError:
       type: object
       required:

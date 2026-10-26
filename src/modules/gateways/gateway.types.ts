@@ -24,8 +24,22 @@ export type GatewayStatusResponse = {
   status: string;
 };
 
+export interface GatewayRefundResponse {
+  gatewayRefundId: string;
+  status: string;
+  amountInPaise: number;
+}
+
+export interface RefundPaymentData {
+  gatewayPaymentId: string;
+  gatewayOrderId?: string;
+  amountInPaise: number;
+  reason?: string;
+}
+
 export interface Gateway {
   initiatePayment(data: InitiatePaymentData): Promise<GatewayResponse>;
+  refundPayment(data: RefundPaymentData): Promise<GatewayRefundResponse>;
   verifyWebhook(
     payload: unknown,
     signature: string,
@@ -34,3 +48,4 @@ export interface Gateway {
   getPaymentStatus(orderId: string): Promise<GatewayStatusResponse>;
   classifyError(err: unknown): string;
 }
+

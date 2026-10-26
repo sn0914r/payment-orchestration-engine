@@ -5,6 +5,7 @@ import { globalErrorHandler } from "./middlewares/errorHandler";
 import { paymentRouter } from "./modules/payments/payment.routes";
 import { webhookRouter } from "./modules/webhooks/webhook.routes";
 import { reconciliationRouter } from "./modules/reconciliation/reconciliation.routes";
+import { refundRouter } from "./modules/refunds/refund.routes";
 import { apiKeyAuth } from "./middlewares/apiKeyAuth";
 
 export const app = express();
@@ -36,6 +37,7 @@ app.use("/docs", async (req, res, next) => {
 app.use("/webhooks", webhookRouter);
 app.use(express.json());
 app.use("/payments", apiKeyAuth, paymentRouter);
+app.use("/refunds", apiKeyAuth, refundRouter);
 app.use("/reconciliation", apiKeyAuth, reconciliationRouter);
 
 app.get("/health", (_req, res) => {
